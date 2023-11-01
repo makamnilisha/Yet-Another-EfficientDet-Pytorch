@@ -12,7 +12,8 @@ change compound_coef
 
 import json
 import os
-
+import csv
+import re
 import argparse
 import torch
 import yaml
@@ -125,14 +126,22 @@ def evaluate_coco(img_path, set_name, image_ids, coco, model, threshold=0.05):
 def _eval(coco_gt, image_ids, pred_json_path):
     # load results in COCO evaluation tool
     coco_pred = coco_gt.loadRes(pred_json_path)
-
+    
     # run COCO evaluation
     print('BBox')
     coco_eval = COCOeval(coco_gt, coco_pred, 'bbox')
     coco_eval.params.imgIds = image_ids
     coco_eval.evaluate()
     coco_eval.accumulate()
-    coco_eval.summarize()
+    stats = coco_eval.summarize()
+    row = []
+    row.append(int(re.findall(r'_([0-9]+)\.', weights_path)[0]))
+    row.extend(stats)
+    with open('results.csv', 'a', newline='') as csvfile:
+      writer = csv.writer(csvfile)
+      writer.writerow(row)
+    print(row)
+
 
 
 if __name__ == '__main__':
