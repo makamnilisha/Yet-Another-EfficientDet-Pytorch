@@ -9,7 +9,7 @@ put weights here /path/to/your/weights/*.pth
 change compound_coef
 
 """
-
+import numpy as np
 import json
 import os
 import csv
@@ -129,23 +129,30 @@ def _eval(coco_gt, image_ids, pred_json_path):
     
     # run COCO evaluation
     print('BBox')
-    coco_eval = COCOeval(coco_gt, coco_pred, 'bbox')
-    coco_eval.params.imgIds = image_ids
-    coco_eval.evaluate()
-    coco_eval.accumulate()
-    stats = coco_eval.summarize()
-    row = []
-    row.append(int(re.findall(r'_([0-9]+)\.', weights_path)[0]))
-    row.extend(stats)
-    with open('results.csv', 'a', newline='') as csvfile:
-      writer = csv.writer(csvfile)
-      writer.writerow(row)
-    print(row)
+    for iouThr in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5 ,0.6, 0.7, 0.8, 0.9, 0.95]:
+      for recThr in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5 ,0.6, 0.7, 0.8, 0.9, 0.95]:
+        coco_eval = COCOeval(coco_gt, coco_pred, 'bbox')
+        coco_eval.params.imgIds = image_ids
+        coco_eval.params.iouThrs = [iouThr]
+        coco_eval.params.recThrs = [recThr]
+        # coco_eval.params.cats = [1]
+        coco_eval.evaluate()
+        coco_eval.accumulate()
+        print("Nilisha: AP, AR stats for IOUThr, recThr ", iouThr, recThr)
+        coco_eval.summarize()
+        row = []
+        row.append(iouThr)
+        row.append(recThr)
+        row.extend(coco_eval.stats)
+        with open('results.csv', 'a', newline='') as csvfile:
+          writer = csv.writer(csvfile)
+          writer.writerow(row)
+        print(row)
 
 
 
 if __name__ == '__main__':
-    SET_NAME = params['val_set']
+    SET_NAME = params['test_set']
     VAL_GT = f'datasets/{params["project_name"]}/annotations/instances_{SET_NAME}.json'
     VAL_IMGS = f'datasets/{params["project_name"]}/{SET_NAME}/'
     MAX_IMAGES = 10000
